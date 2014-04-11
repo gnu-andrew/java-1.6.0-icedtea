@@ -6,7 +6,7 @@
 # If debug is 1, a debug build of OpenJDK is performed.
 %define debug 0
 
-%define icedteaver 1.13.1
+%define icedteaver 1.13.2
 %define icedteasnapshot %{nil}
 %define openjdkver b30
 %define openjdkdate 21_jan_2014
@@ -88,6 +88,20 @@
 %define bootstrapopt --disable-bootstrap
 %endif
 
+# Updated ecj on F19 and later isn't reliable
+%if 0%{?fedora} < 19
+%define ecjopt --with-gcj --with-ecj-jar=%{SOURCE3}
+%else
+%define ecjopt %{nil}
+%endif
+
+# Only F18 and later have a new enough lcms2
+%if 0%{?fedora} < 18
+%define lcmsopt --disable-lcms2  --disable-system-lcms
+%else
+%define lcmsopt %{nil}
+%endif
+
 # Convert an absolute path to a relative path.  Each symbolic link is
 # specified relative to the directory in which it is installed so that
 # it will resolve properly within chrooted installations.
@@ -149,7 +163,7 @@
 
 Name:    java-%{javaver}-%{origin}
 Version: %{icedteaver}
-Release: 0%{?dist}
+Release: 1%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons,
 # and this change was brought into RHEL-4.  java-1.5.0-ibm packages
 # also included the epoch in their virtual provides.  This created a
@@ -170,6 +184,7 @@ Source0:  %{icedteaurl}download/source/icedtea6-%{icedteaver}%{icedteasnapshot}.
 # and run %{SOURCE3} on the tarball.
 Source1:  %{openjdkzip}
 Source2:  %{accessurl}%{accessmajorver}/java-access-bridge-%{accessver}.tar.bz2
+Source3:  ftp://ftp@sourceware.org/pub/java/ecj-4.5.jar
 Source4:  README.src
 
 # Pre-2009 changelog, retained to ensure contributions are not lost
@@ -185,10 +200,6 @@ Patch3:	  java-access-bridge-security.patch
 Patch4:   accessible-toolkit.patch
 Patch5:   debugdocs.patch
 Patch6:   debuginfo.patch
-Patch7:   1.13.1-post-version_bump.patch
-Patch8:   1.13.1-post-jdk_generic_profile_fix.patch
-Patch9:   1.13.1-post-auto_disable_system_lcms.patch
-Patch10:   1.13.1-post-werror.patch
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -210,10 +221,15 @@ BuildRequires: zlib-devel
 BuildRequires: libjpeg-devel
 BuildRequires: libpng-devel
 BuildRequires: giflib-devel
+%if 0%{?fedora} >= 18
+BuildRequires: lcms2-devel >= 2.5
+%endif
 BuildRequires: wget
 BuildRequires: xorg-x11-proto-devel
 BuildRequires: ant
+%if 0%{?fedora} < 20
 BuildRequires: ant-nodeps
+%endif
 BuildRequires: rhino
 BuildRequires: redhat-lsb
 BuildRequires: nss-devel
@@ -222,7 +238,7 @@ BuildRequires: krb5-devel
 BuildRequires: java-1.5.0-gcj-devel
 BuildRequires: libxslt
 %else
-BuildRequires: java-1.6.0-openjdk-devel
+BuildRequires: java-1.6.0-icedtea-devel
 %endif
 # Java Access Bridge for GNOME build requirements.
 BuildRequires: at-spi-devel
@@ -237,8 +253,6 @@ BuildRequires: pulseaudio >= 0.9.11
 %ifnarch %{jit_arches}
 BuildRequires: libffi-devel
 %endif
-
-ExclusiveArch: x86_64 i686
 
 # cacerts build requirement.
 BuildRequires: openssl
@@ -284,6 +298,13 @@ Provides: jce = %{epoch}:%{version}
 Provides: jdbc-stdext = 3.0
 Provides: java-sasl = %{epoch}:%{version}
 Provides: java-fonts = %{epoch}:%{version}
+
+# Obsolete older OpenJDK 1.6 packages
+Obsoletes: java-1.6.0-openjdk
+Obsoletes: java-1.6.0-openjdk-demo
+Obsoletes: java-1.6.0-openjdk-devel
+Obsoletes: java-1.6.0-openjdk-javadoc
+Obsoletes: java-1.6.0-openjdk-src
 
 %description
 The OpenJDK runtime environment.
@@ -350,27 +371,17 @@ The OpenJDK API documentation.
 %setup -q -n icedtea6-%{icedteaver}
 %setup -q -n icedtea6-%{icedteaver} -T -D -a 2
 %patch0
-%patch7 -p1
-%patch8 -p1
-%patch9 -p1
-%patch10 -p1
 
 cp %{SOURCE4} .
 
 %build
 
 # Build IcedTea and OpenJDK.
-%ifarch sparc64 alpha
-export ARCH_DATA_MODEL=64
-%endif
-%ifarch alpha
-export CFLAGS="$CFLAGS -mieee"
-%endif
 ./autogen.sh
 %configure %{bootstrapopt} --with-openjdk-src-zip=%{SOURCE1} \
   --enable-pulse-java --with-abs-install-dir=%{_jvmdir}/%{sdkdir} %{systemtapopt} \
   --disable-downloading --with-rhino --enable-nss --enable-system-kerberos \
-  --disable-lcms2  --disable-system-lcms
+  %{ecjopt} %{lcmsopt}
 
 make %{?_smp_mflags} patch
 
@@ -423,7 +434,9 @@ pushd %{buildoutputdir}/j2sdk-image
   install -d -m 755 $RPM_BUILD_ROOT%{tapsetdir}
   pushd $RPM_BUILD_ROOT%{tapsetdir}
     RELATIVE=$(%{abs2rel} %{_jvmdir}/%{sdkdir}/tapset %{tapsetdir})
-    ln -sf $RELATIVE/*.stp .
+    for files in $RELATIVE/*.stp ; do \
+      ln -sf $files $(echo $(basename $files)|sed "s|\.|-%{icedteaver}.|") ; \
+    done
   popd
 %endif
 
@@ -866,6 +879,12 @@ exit 0
 %doc %{_javadocdir}/%{name}
 
 %changelog
+* Fri Mar 28 2014 Andrew John Hughes <gnu.andrew@redhat.com> - 1:1.13.2-1
+- Update to 1.13.2
+- Drop 1.13.1 post-release patches
+- Add version to SystemTap files to avoid conflicts
+- Add ecj & LCMS2 support from java-1.7.0-icedtea
+
 * Mon Mar 24 2014 Andrew John Hughes <gnu.andrew@redhat.com> - 1:1.13.1-1
 - Make package buildable on F16/17
 - Turn on gcj bootstrap
