@@ -6,10 +6,10 @@
 # If debug is 1, a debug build of OpenJDK is performed.
 %define debug 0
 
-%define icedteaver 1.13.2
+%define icedteaver 1.13.3
 %define icedteasnapshot %{nil}
-%define openjdkver b30
-%define openjdkdate 21_jan_2014
+%define openjdkver b31
+%define openjdkdate 15_apr_2014
 
 %define icedteaurl http://icedtea.classpath.org/
 
@@ -879,6 +879,9 @@ exit 0
 %doc %{_javadocdir}/%{name}
 
 %changelog
+* Fri Apr 18 2014 Andrew John Hughes <gnu.andrew@redhat.com> - 1:1.13.3-1
+- Update to 1.13.3
+
 * Fri Mar 28 2014 Andrew John Hughes <gnu.andrew@redhat.com> - 1:1.13.2-1
 - Update to 1.13.2
 - Drop 1.13.1 post-release patches
