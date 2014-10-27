@@ -90,14 +90,14 @@
 
 # Updated ecj on F19 and later isn't reliable
 %if 0%{?fedora} < 19
-%define ecjopt --with-gcj --with-ecj-jar=%{SOURCE3}
-%else
 %define ecjopt %{nil}
+%else
+%define ecjopt --with-gcj --with-ecj-jar=%{SOURCE3}
 %endif
 
 # Only F18 and later have a new enough lcms2
 %if 0%{?fedora} < 18
-%define lcmsopt --disable-lcms2  --disable-system-lcms
+%define lcmsopt --disable-lcms2 --disable-system-lcms
 %else
 %define lcmsopt %{nil}
 %endif
@@ -163,7 +163,7 @@
 
 Name:    java-%{javaver}-%{origin}
 Version: %{icedteaver}
-Release: 1%{?dist}
+Release: 2%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons,
 # and this change was brought into RHEL-4.  java-1.5.0-ibm packages
 # also included the epoch in their virtual provides.  This created a
@@ -879,6 +879,9 @@ exit 0
 %doc %{_javadocdir}/%{name}
 
 %changelog
+* Fri Apr 18 2014 Andrew John Hughes <gnu.andrew@redhat.com> - 1:1.13.3-2
+- Fix native ecj parameter addition
+
 * Fri Apr 18 2014 Andrew John Hughes <gnu.andrew@redhat.com> - 1:1.13.3-1
 - Update to 1.13.3
 
