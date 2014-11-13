@@ -6,10 +6,10 @@
 # If debug is 1, a debug build of OpenJDK is performed.
 %define debug 0
 
-%define icedteaver 1.13.3
+%define icedteaver 1.13.5
 %define icedteasnapshot %{nil}
-%define openjdkver b31
-%define openjdkdate 15_apr_2014
+%define openjdkver b33
+%define openjdkdate 14_oct_2014
 
 %define icedteaurl http://icedtea.classpath.org/
 
@@ -97,7 +97,7 @@
 
 # Only F18 and later have a new enough lcms2
 %if 0%{?fedora} < 18
-%define lcmsopt --disable-lcms2 --disable-system-lcms
+%define lcmsopt --disable-lcms2
 %else
 %define lcmsopt %{nil}
 %endif
@@ -163,7 +163,7 @@
 
 Name:    java-%{javaver}-%{origin}
 Version: %{icedteaver}
-Release: 2%{?dist}
+Release: 0%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons,
 # and this change was brought into RHEL-4.  java-1.5.0-ibm packages
 # also included the epoch in their virtual provides.  This created a
@@ -879,6 +879,9 @@ exit 0
 %doc %{_javadocdir}/%{name}
 
 %changelog
+* Mon Oct 27 2014 Andrew John Hughes <gnu.andrew@redhat.com> - 1:1.13.5-3
+- Update to 1.13.5
+
 * Fri Apr 18 2014 Andrew John Hughes <gnu.andrew@redhat.com> - 1:1.13.3-2
 - Fix native ecj parameter addition
 
